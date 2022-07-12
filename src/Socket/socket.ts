@@ -38,8 +38,10 @@ export function makeConnectionBlaze({
             code,
             reason: reason.toString()
         })
-        clearInterval(interval)
         wss.close()
+        console.log('close')
+        console.log(reason.toString())
+        process.exit()
     });
     return {
         ev: ev,

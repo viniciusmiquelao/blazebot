@@ -1,28 +1,31 @@
 import { makeConnectionBlaze} from "../Socket"
 import { DoubleUpdateV2} from "../Types/IDoubleUpdate"
 import {inGame, MetricDouble} from '../helpers/BotMetrics/MetricDouble'
+import io from 'socket.io-client'
 
 
-const socket = makeConnectionBlaze({needCloseWithCompletedSession: false,requireNotRepeated: true, type: 'doubles'})
+const socketIO = io(process.env.SOCKET_URL || 'http://localhost:4000')
+
 
 let lastUpdatesList: DoubleUpdateV2[] = []
 
 const metricDouble = new MetricDouble()
 
-
-socket.ev.on('game_graphing', (msg) => {
+socketIO.on('double', async (msg)  => {
     delete msg.bets
     if(lastUpdatesList.length == 6) lastUpdatesList.shift()
     lastUpdatesList.push(msg as DoubleUpdateV2)
+    await metricDouble.resetMessageId()
     if(inGame){
-        metricDouble.game(msg as DoubleUpdateV2)
+        await metricDouble.game(msg as DoubleUpdateV2)
     }
 
-    if(inGame == false && lastUpdatesList.length > 4){
-        metricDouble.verifySequenceFour(lastUpdatesList)
-         metricDouble.verifyWhiteAndSequenceColors(lastUpdatesList)
-         metricDouble.verifyChess(lastUpdatesList)
+    if(inGame == false && lastUpdatesList.length >= 5){
+        await metricDouble.verifySequenceFour(lastUpdatesList)
+         await metricDouble.verifyWhiteAndSequenceColors(lastUpdatesList)
+        //await  metricDouble.verifyChess(lastUpdatesList)
     }
 })
+
 
 

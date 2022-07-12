@@ -6,6 +6,7 @@ import { DoubleUpdateV2 } from "../../Types"
 let inGame = false;
 let gale = 0;
 let entryColorGame = 0;
+let messageId = 0;
 
 class MetricDouble {
     bot: Bot
@@ -14,6 +15,7 @@ class MetricDouble {
     info: Promise<string>
     cover: Promise<string>
     entryBlack: Promise<string>
+    possibleGame: Promise<string>
     entryRed: Promise<string>
     gale1: Promise<string>
     gale2: Promise<string>
@@ -29,6 +31,7 @@ class MetricDouble {
         this.alert = this.mounteMessageHelper.Alert()
         this.info = this.mounteMessageHelper.Info()
         this.cover = this.mounteMessageHelper.Cover()
+        this.possibleGame = this.mounteMessageHelper.PossibleGame()
         this.entryBlack = this.mounteMessageHelper.Entryblack()
         this.entryRed = this.mounteMessageHelper.EntryRed()
         this.green = this.mounteMessageHelper.Green()
@@ -46,63 +49,116 @@ class MetricDouble {
         inGame = true;
     }
 
-    
+    async resetMessageId(){
+        if(messageId != 0){
+            this.bot.deleteMessageWithID(messageId)
+            messageId = 0
+        }
+    }
+
+    async sendPossibleGame(){
+        if(!inGame){
+            let message = await this.possibleGame;
+            let messageIdSended = await this.bot.sendMessage({ message })
+            messageId = messageIdSended
+            console.log({ message }) 
+        }
+    }
+
 
     async verifySequenceFour(list: DoubleUpdateV2[]) {
         let message: string;
-        const finalFourUpdates = list.slice(list.length - 4,list.length)
+        let finalFourUpdates = list.slice(list.length - 4,list.length)
 
-        const checkReds = finalFourUpdates.filter((e)=> e.color == 1)
+        let checkReds = finalFourUpdates.filter((e)=> e.color == 1)
 
         if(checkReds.length == 4){
             message = await this.entryBlack;
             await this.entryInGame(2);
         }  
 
-        const checkBlacks = finalFourUpdates.filter((e)=> e.color == 2)
+        let checkBlacks = finalFourUpdates.filter((e)=> e.color == 2)
 
         if(checkBlacks.length == 4){
             message = await this.entryRed;
             await this.entryInGame(1);
         }  
 
+        if(message == undefined){
+            let finalTreeUpdates = list.slice(list.length - 3,list.length)
+
+            let checkRedsPossible = finalTreeUpdates.filter((e)=> e.color == 1)
+
+            if(checkRedsPossible.length == 3){
+                message = await this.possibleGame;
+            }  
+
+            let checkBlacksPossible = finalTreeUpdates.filter((e)=> e.color == 2)
+
+            if(checkBlacksPossible.length == 3){
+                message = await this.possibleGame;
+            }  
+
+            
+                
+            if(message != undefined){
+                await this.sendPossibleGame()
+                return
+            }
+            
+        }
+
         if(message != undefined){
-            this.bot.sendMessage({ message})
+            await this.bot.sendMessage({ message})
             console.log({ message })
         }
+
+        return 
     }
 
     async verifyWhiteAndSequenceColors(list: DoubleUpdateV2[]) {
         let message: string;
-        const finalTreeUpdates = list.slice(list.length - 3,list.length)
+        let finalTreeUpdates = list.slice(list.length - 3,list.length)
 
-        const checkWhite = finalTreeUpdates[0]
+        let checkWhite = finalTreeUpdates[0]
 
-        if(checkWhite.color != 0) return; 
+        if(checkWhite.color == 0) {
+            let checkBlacks = finalTreeUpdates.filter((e)=> e.color == 2)
 
-        const checkBlacks = finalTreeUpdates.filter((e)=> e.color == 2)
+            if(checkBlacks.length == 2){
+                message = await this.entryRed;
+                await this.entryInGame(1);
+            }  
 
-        if(checkBlacks.length == 2){
-            message = await this.entryRed;
-            await this.entryInGame(1);
-        }  
+            let checkReds = finalTreeUpdates.filter((e)=> e.color == 1)
 
-        const checkReds = finalTreeUpdates.filter((e)=> e.color == 1)
+            if(checkReds.length == 2){
+                message = await this.entryBlack;
+                await this.entryInGame(2);
+            }  
 
-        if(checkReds.length == 2){
-            message = await this.entryRed;
-            await this.entryInGame(2);
-        }  
+        }; 
+
+        if(message == undefined){
+            let finalTwoUpdates = list.slice(list.length - 2,list.length)
+
+            if(finalTwoUpdates[1].color != 0 && finalTwoUpdates[0].color == 0){
+                await this.sendPossibleGame()
+                return
+            }
+        }
 
         if(message != undefined){
             this.bot.sendMessage({ message})
             console.log({ message })
         }
+
+        return
     }
 
     async verifyChess(list: DoubleUpdateV2[]) {
         let message: string;
-        const finalFiveUpdates = list.slice(list.length - 5,list.length)
+        let finalFiveUpdates = list.slice(list.length - 5,list.length)
 
         let result1 = true;
         let result2 = true;
@@ -149,15 +205,60 @@ class MetricDouble {
             } else if (finalFiveUpdates[finalFiveUpdates.length - 1].color == 2) {
                 message = await this.entryBlack;
                 await this.entryInGame(2);
-            } else return
-        } else return
+            } 
+        }
 
-        
+        if(message == undefined){
+            let finalFourUpdates = list.slice(list.length - 4,list.length)
+            let result5 = true;
+            let result6 = true;
+            let result7 = true;
+            let result8 = true;
+
+
+            let odds2 = finalFourUpdates.filter((a, i) => i%2)
+            let evens2 = finalFourUpdates.filter((a, i) => i%2 == 0)
+
+            for (let i = 0; i < odds2.length; i++) {
+                if (odds2[i].color != 1) {
+                    result5 = false;
+                    break;
+                }
+            }
+
+            for (let i = 0; i < evens2.length; i++) {
+                if (evens2[i].color != 2) {
+                    result6 = false;
+                    break;
+                }
+            }
+
+            for (let i = 0; i < odds2.length; i++) {
+                if (odds2[i].color != 2) {
+                    result7 = false;
+                    break;
+                }
+            }
+
+            for (let i = 0; i < evens2.length; i++) {
+                if (evens2[i].color != 1) {
+                    result8 = false;
+                    break;
+                }
+            }
+
+            if((result5 == true && result6 == true) || (result7 == true && result8 == true)) {
+                await this.sendPossibleGame()
+                return
+            }
+        }
 
         if(message != undefined){
             this.bot.sendMessage({ message})
             console.log({ message })
         }
+
+        return
     }
 
     async game(newUpdate: DoubleUpdateV2){
@@ -168,9 +269,9 @@ class MetricDouble {
         let counterToday = await counter.getCounts()
 
         if(counterToday == null){
-            const d = new Date()
+            let d = new Date()
 
-            const date = Intl.DateTimeFormat("pt-br").format(d)
+            let date = Intl.DateTimeFormat("pt-br").format(d)
             counterToday =  await counter.createCounts({
                 countGale1: 0, 
                 countGale2: 0, 
@@ -224,10 +325,11 @@ class MetricDouble {
         }
 
         if(message != undefined){
-            this.bot.sendMessage({ message})
+            await this.bot.sendMessage({ message})
             console.log({ message })
         }
        
+        return
     }
 }
 

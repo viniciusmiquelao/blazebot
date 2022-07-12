@@ -4,6 +4,7 @@ class MountMessageHelper {
     green: string
     red: string
     confirmedEntry: string
+    possibleGame: string
     info: string
     cover: string
     alert: string
@@ -23,6 +24,7 @@ class MountMessageHelper {
         this.info = "2️⃣ Máximo <b>02 Martingale</b>"
         this.cover = "⚪"
         this.alert = "<b>⚠️ATENÇÃO⚠️</b>"
+        this.possibleGame = "<b>⚠️ Possivel entrada ⚠️</b>"
         this.balance = "📊 Balanço 📊"
         this.greenWithWhite = "<b>GREEN</b>✅✅ 🤑💰\n\n<i>No Branco</i>⚪"
         this.gale1 ="=== GALE 1 ==="
@@ -39,6 +41,10 @@ class MountMessageHelper {
 
     async EntryRed() {
         return this.entryRed
+    }
+
+    async PossibleGame() {
+        return this.possibleGame
     }
 
     async Entryblack() {
