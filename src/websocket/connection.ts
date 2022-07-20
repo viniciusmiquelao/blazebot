@@ -21,8 +21,8 @@ socketIO.on('double', async (msg)  => {
     }
 
     if(inGame == false && lastUpdatesList.length >= 5){
-        await metricDouble.verifySequenceFour(lastUpdatesList)
-         await metricDouble.verifyWhiteAndSequenceColors(lastUpdatesList)
+        await metricDouble.verifySequenceTree(lastUpdatesList)
+        // await metricDouble.verifyWhiteAndSequenceColors(lastUpdatesList)
         //await  metricDouble.verifyChess(lastUpdatesList)
     }
 })

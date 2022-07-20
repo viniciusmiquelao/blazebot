@@ -116,6 +116,56 @@ class MetricDouble {
         return 
     }
 
+    async verifySequenceTree(list: DoubleUpdateV2[]) {
+        let message: string;
+        let finalFourUpdates = list.slice(list.length - 3,list.length)
+
+        let checkReds = finalFourUpdates.filter((e)=> e.color == 1)
+
+        if(checkReds.length == 3){
+            message = await this.entryBlack;
+            await this.entryInGame(2);
+        }  
+
+        let checkBlacks = finalFourUpdates.filter((e)=> e.color == 2)
+
+        if(checkBlacks.length == 3){
+            message = await this.entryRed;
+            await this.entryInGame(1);
+        }  
+
+        if(message == undefined){
+            let finalTreeUpdates = list.slice(list.length - 2,list.length)
+
+            let checkRedsPossible = finalTreeUpdates.filter((e)=> e.color == 1)
+
+            if(checkRedsPossible.length == 2){
+                message = await this.possibleGame;
+            }  
+
+            let checkBlacksPossible = finalTreeUpdates.filter((e)=> e.color == 2)
+
+            if(checkBlacksPossible.length == 2){
+                message = await this.possibleGame;
+            }  
+
+            
+                
+            if(message != undefined){
+                await this.sendPossibleGame()
+                return
+            }
+            
+        }
+
+        if(message != undefined){
+            await this.bot.sendMessage({ message})
+            console.log({ message })
+        }
+
+        return 
+    }
+
     async verifyWhiteAndSequenceColors(list: DoubleUpdateV2[]) {
         let message: string;
         let finalTreeUpdates = list.slice(list.length - 3,list.length)
@@ -331,6 +381,63 @@ class MetricDouble {
        
         return
     }
+
+    async stopBot(){
+        await this.bot.sendMessage({ message: 'O Mago precisa descansar! 🧙‍♂️\n\nEle retornará amanhã com mais GREENS✅ pra vocês!'})
+        const d = new Date()
+    
+            const date = Intl.DateTimeFormat("pt-br").format(d)
+            console.log(date)
+            const countUseCase = new CountsUseCase()
+            const data = await countUseCase.getCounts(date)
+
+            if (data === null) {
+                console.log("Sem registro")
+                await this.bot.sendMessage({ message: `📊 Resultados até agora! 📈\n\n⛔<b>Sem registro</b>\n\n✅Acertos: <b>0</b>\n❌Não Bateu: <b>0</b>\n\n <b>0% de aproveitamento!</b>`})
+                return
+            }
+
+            const { red, totalWin, percentageWin } = await this.calculateCounts(data)
+
+            const message = `📊 Resultados até agora! 📈\n\n✅Acertos: <b>${totalWin}</b>\n❌Não Bateu: <b>${red}</b>\n\n<b>${Math.round(100 - percentageWin)}% de aproveitamento!</b>`
+            await this.bot.sendMessage({ message})
+            console.log('🤖 Bot Off! 🔴')
+            process.exit()            
+        
+    }
+
+    async calculateCounts(data: IDataCount) {
+        let green = null
+        let red = null
+
+        
+        green = green + data.countGreen
+        red = red + data.countRed
+        
+        let totalWin = green
+        let totalSent = totalWin + red
+        let percentageWin = Math.round((red * 100) / totalSent)
+
+        return {
+            green,
+            red,
+            totalWin,
+            totalSent,
+            percentageWin
+        }
+    }
+}
+
+interface IDataCount {
+    id: string
+    countWhite: number
+    countGreen: number
+    countRed: number
+    countGale1: number
+    countGale2: number
+    totalWin?: number
+    totalSent?: number
+    percentageWin?: number
 }
 
 export { MetricDouble, inGame }
